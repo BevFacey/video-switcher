@@ -3,8 +3,28 @@
 # pip install python-osc
 from pythonosc import dispatcher
 from pythonosc import osc_server
+
+# pip install netifaces
+import netifaces
 import socket
 import argparse
+
+def list_ip_addresses():
+    """List all IP addresses for this machine.
+    
+    Returns:
+        dict: Dictionary of interface names to list of IP addresses
+    """
+    addresses = {}
+    for interface in netifaces.interfaces():
+        try:
+            ifaddresses = netifaces.ifaddresses(interface)
+            if netifaces.AF_INET in ifaddresses:
+                addresses[interface] = [addr['addr'] 
+                                     for addr in ifaddresses[netifaces.AF_INET]]
+        except ValueError:
+            continue
+    return addresses
 
 class KramerVP440:
     def __init__(self, ip='192.168.140.25', port=50000):
@@ -74,6 +94,11 @@ if __name__ == "__main__":
     server = osc_server.ThreadingOSCUDPServer(
         (args.osc_ip, args.osc_port), dispatch)
     
+    # Print network information
+    print("\nAvailable network interfaces:")
+    for interface, ips in list_ip_addresses().items():
+        print(f"{interface}: {', '.join(ips)}")
+
     print(f"Serving on {server.server_address}")
     print("Send OSC message to /input with an integer argument (1-6) to switch inputs")
     
